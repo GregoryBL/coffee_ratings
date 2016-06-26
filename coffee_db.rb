@@ -52,5 +52,21 @@ def create_tables
 
 end
 
+def add_user(name)
+  users.insert(:name => name)
+end
 
+def add_roaster(name, city)
+  roasters.insert(:name => name, :city => city)
+end
+
+def add_coffee(name, country, roaster, roast_date = nil)
+  this_roaster = roasters[:name => roaster)].select(:id)
+  p this_roaster
+  if !this_roaster
+    add_roaster(name, "")
+    this_roaster = roasters[:name => roaster)].select(:id)
+  end
+  coffees.insert(:name => name, :country => country, :roast_date => roast_date, :roaster => this_roaster)
+end
 
