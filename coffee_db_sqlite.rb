@@ -178,6 +178,14 @@ def all_reviews_for_user(db, user_id)
   db.execute(select, user_id)
 end
 
+def all_reviews_for_roaster(db, roaster_id)
+  select = <<-SQL 
+  SELECT * FROM reviews
+  JOIN coffees ON coffees.id = reviews.coffee_id
+  WHERE roaster_id = ? 
+  SQL
+  db.execute(select, roaster_id)
+end
 # INTERFACE
 
 # Convenience helpers
@@ -376,7 +384,7 @@ end
 
 def print_review(db, user_id, coffee_id, prep_id, review_date, rating, comment)
   puts "--------------------"
-  puts "#{user_name(db, user_id)}'s review of #{coffee_name(db, coffee_id)} on #{Time.at(review_date).strptime('%b-%d-%Y')}:"
+  puts "#{user_name(db, user_id)}'s review of #{coffee_name(db, coffee_id)} on #{Time.at(review_date).strftime('%b-%d-%Y')}:"
   print_review_no_header(db, prep_id, rating, comment)
 end
 
@@ -395,7 +403,7 @@ end
 def print_all_user_reviews(db, user_id)
   all_reviews = all_reviews_for_user(db, user_id)
   puts "--------------------"
-  puts "All reviews for #{user_name(db, all_reviews[0]['id'])}:"
+  puts "All reviews for #{user_name(db, user_id)}:"
   all_reviews.each do |review|
     coffee_id = review["coffee_id"]
     prep_id = review["prep_id"]
@@ -407,7 +415,18 @@ def print_all_user_reviews(db, user_id)
 end
 
 def print_all_roaster_reviews(db, roaster_id)
-
+  all_reviews = all_reviews_for_roaster(db, roaster_id)
+  puts "--------------------"
+  puts "All reviews for #{roaster_name(db, roaster_id)}:"
+  all_reviews.each do |review|
+    user_id = review["user_id"]
+    coffee_id = review["coffee_id"]
+    prep_id = review["prep_id"]
+    review_date = review["review_date"]
+    rating = review["rating"]
+    comment = review["comment"]
+    print_review(db, user_id, coffee_id, prep_id, review_date, rating, comment)
+  end
 end
 # main interface
 def interface(db)
