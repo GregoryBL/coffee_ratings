@@ -61,7 +61,7 @@ def add_roaster(name, city)
 end
 
 def add_coffee(name, country, roaster, roast_date = nil)
-  coffees.insert(:name => name, :country => country, :roast_date => roast_date, :roaster => this_roaster)
+  coffees.insert(:name => name, :country => country, :roast_date => roast_date, :roaster_id => roaster)
 end
 
 def add_preparation(name, type)
@@ -69,8 +69,45 @@ def add_preparation(name, type)
 end
 
 def add_review(user, coffee, preparation, preparer, date, rating, comment)
-  reviews.insert(:user => this_user, :coffee => this_coffee, :preparation => this_preparation, :preparer => this_preparer, :date => date, :rating => rating, :comment => comment)
+  reviews.insert(:user_id => user, :coffee_id => coffee, :preparation_id => preparation, :preparer => preparer, :date => date, :rating => rating, :comment => comment)
 end
+
+def get_user_id(name)
+  users[:name => name][:id]
+end
+
+def get_roaster_id(name)
+  roasters[:name => name][:id]
+end
+
+def get_coffee_id(name)
+  coffees[:name => name][:id]
+end
+
+def get_preparation_id(name)
+  preparations[:name => name][:id]
+end
+
+def all_user_reviews(user)
+  user_id = get_user_id(user)
+  reviews.where(:id => user_id).join(coffees).join(preparations)
+end
+
+def average_user_score(user)
+  user_id = get_user_id(user)
+  reviews.where(:id => user_id).ave(:review)
+end
+
+def average_coffee_score(coffee)
+  coffee_id = get_coffee_id(coffee)
+  reviews.where(:coffee => coffee_id).ave(:review)
+end
+
+
+
+
+
+
 
 
 
