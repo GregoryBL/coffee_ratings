@@ -1,17 +1,17 @@
 require 'sqlite3'
 
-coffee_db = SQLite3::Database.new "test.db"
+coffee_db = SQLite3::Database.new "coffee.db"
 
-def create_tables
+def create_tables(db)
 
-  coffee_db.execute <<-SQL
+  db.execute <<-SQL
     create table if not exists users (
     id INTEGER PRIMARY KEY,
     name VARCHAR(255)
     );
   SQL
 
-  coffee_db.execute <<-SQL
+  db.execute <<-SQL
     create table if not exists roasters (
     id INTEGER PRIMARY KEY,
     name VARCHAR(255),
@@ -19,7 +19,7 @@ def create_tables
     );
   SQL
 
-  coffee_db.execute <<-SQL
+  db.execute <<-SQL
     create table if not exists coffees (
     id INTEGER PRIMARY KEY,
     name VARCHAR(255),
@@ -30,7 +30,7 @@ def create_tables
     );
   SQL
 
-  coffee_db.execute <<-SQL
+  db.execute <<-SQL
     create table if not exists preparations (
     id INTEGER PRIMARY KEY,
     name VARCHAR(255),
@@ -38,7 +38,7 @@ def create_tables
     );
   SQL
 
-  coffee_db.execute <<-SQL
+  db.execute <<-SQL
     create table if not exists reviews (
     id INTEGER PRIMARY KEY,
     user_id INT,
@@ -47,8 +47,13 @@ def create_tables
     preparer VARCHAR(255),
     review_date INT
     rating REAL,
-    comment VARCHAR(255)
+    comment VARCHAR(255),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (coffee_id) REFERENCES coffees(id),
+    FOREIGN KEY (preparation_id) REFERENCES preparations(id)
     );
   SQL
 
 end
+
+create_tables(coffee_db)
