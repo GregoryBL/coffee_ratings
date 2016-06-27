@@ -61,12 +61,17 @@ def add_roaster(name, city)
 end
 
 def add_coffee(name, country, roaster, roast_date = nil)
-  this_roaster = roasters[:name => roaster)].select(:id)
-  p this_roaster
-  if !this_roaster
-    add_roaster(name, "")
-    this_roaster = roasters[:name => roaster)].select(:id)
-  end
   coffees.insert(:name => name, :country => country, :roast_date => roast_date, :roaster => this_roaster)
 end
+
+def add_preparation(name, type)
+  preparations.insert(:name => name, :type => type)
+end
+
+def add_review(user, coffee, preparation, preparer, date, rating, comment)
+  reviews.insert(:user => this_user, :coffee => this_coffee, :preparation => this_preparation, :preparer => this_preparer, :date => date, :rating => rating, :comment => comment)
+end
+
+
+
 
