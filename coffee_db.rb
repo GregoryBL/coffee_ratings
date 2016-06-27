@@ -90,7 +90,7 @@ end
 
 def all_user_reviews(user)
   user_id = get_user_id(user)
-  reviews.where(:id => user_id).join(coffees).join(preparations)
+  reviews.where(:id => user_id).join(:users, :id => :user_id).join(:coffees, :id => :coffee_id).join(:preparations, :id => :preparation_id)
 end
 
 def average_user_score(user)
@@ -103,6 +103,9 @@ def average_coffee_score(coffee)
   reviews.where(:coffee => coffee_id).ave(:review)
 end
 
+def print_user_review(review)
+  puts "Review of #{review[:coffee]}"
+end
 
 
 
