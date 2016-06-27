@@ -72,8 +72,16 @@ def get_coffee_id(db, name_string, roaster_id = nil)
   end
 end
 
+def coffee_name(db, id)
+  db.execute("SELECT name FROM coffee WHERE id=?", id)[0][:name]
+end
+
 def get_preparation_id(db, name_string)
   db.execute("SELECT id FROM preparations WHERE name=?", name_string)[0][:id]
+end
+
+def preparation_name(db, id)
+  db.execute("SELECT name FROM preparations WHERE id=?", id)[0][:name]
 end
 
 def add_user(db, name)
@@ -93,7 +101,7 @@ def add_preparation(db, name, type)
   db.execute("INSERT INTO preparations (name, type) VALUES (?, ?)", [name, type])
 end
 
-def add_review(db, user_id, coffee_id, preparation_id, preparer, roast_date, review_date, rating, comment)
+def add_review(db, user_id, coffee_id, preparation_id, preparer, review_date, roast_date, rating, comment)
   db.execute("INSERT INTO reviews (user_id, coffee_id, preparation_id, preparer, roast_date, review_date, rating, comment) VALUES (?, ?, ?, ?, ?, ?, ?)" [user_id, coffee_id, preparation_id, preparer, roast_date, review_date, rating, comment])
 end
 
@@ -103,6 +111,10 @@ end
 
 def all_coffees_from_roaster(db, roaster_id)
   db.execute("SELECT * FROM coffees WHERE roaster_id = ?", roaster_id)
+end
+
+def all_preparations(db)
+  db.execute("SELECT * FROM preparations")
 end
 
 # INTERFACE
@@ -167,7 +179,7 @@ def get_roaster
 end
 
 def list_roasters
-  roasters = all_roasters
+  roasters = all_roasters(coffee_db)
   roasters.each_with_index { |roaster, ind|
     puts "#{ind + 1} - #{roaster[:name]} in #{roaster[:city]}"
   }
@@ -178,11 +190,12 @@ def get_coffee
   coffee_valid = false
   while !coffee_valid
     roaster_id = get_roaster
-    coffee_list = list_coffees_from_roaster
+    coffee_list = list_coffees_from_roaster(roaster_id)
     puts "#{coffee_list.length + 1} - Other Coffee"
     coffee_input = gets.chomp.to_i
     if coffee_input <= coffee_list.length && coffee_input > 0
       coffee = coffee_list[coffee_input - 1][:id]
+      coffee_valid = true
     elsif coffee_input == coffee_list.length + 1
       puts "What is the name of the coffee?"
       coffee_name = gets.chomp
@@ -194,17 +207,20 @@ def get_coffee
         puts "Confirm add of #{coffee_name} from #{coffee_country}. (y/n)"
       else
         coffee_country = "blend"
-        puts "Confirm add of #{coffee_name}."
+        puts "Confirm add of #{coffee_name}. (y/n)"
       end
-      add_coffee(coffee_db, coffee_name, coffee_country, roaster_id)
-      coffee = get_coffee_id(coffee_db, coffee_name, roaster_id)
+      if get_yes_no
+        add_coffee(coffee_db, coffee_name, coffee_country, roaster_id)
+        coffee = get_coffee_id(coffee_db, coffee_name, roaster_id)
+        coffee_valid = true
+      end
     end
   end
   coffee
 end
 
-def list_coffees_from_roaster
-  coffees = all_coffees_from_roaster
+def list_coffees_from_roaster(roaster_id)
+  coffees = all_coffees_from_roaster(coffee_db, roaster_id)
   coffees.each_with_index do |coffee, ind|
     if roaster[:country] == "blend" || !roaster[:country] || roaster[:country] == ""
       puts "#{ind + 1} - #{roaster[:name]} (blend)"
@@ -216,17 +232,115 @@ def list_coffees_from_roaster
 end
 
 def get_preparation
-  
+  method_valid = false
+  while !method_valid
+    puts "How was the coffee prepared?"
+    prep_list = list_preparations
+    puts "#{prep_list.length + 1} - Other method"
+    prep_input = gets.chomp.to_i
+
+    if prep_input <= prep_list.length && coffee_input > 0
+      prep_method = prep_list[prep_input + 1][:id]
+      method_valid = true
+    elsif prep_input == prep_list.length + 1
+      puts "What method was used to prepare this coffee?"
+      prep_name = gets.chomp
+      puts "Is this method automatic, pourover, percolator, press, or other?"
+      prep_type = gets.chomp
+      if !["automatic", "pourover", "percolator", "press"].include?(prep_type)
+        prep_input = "other"
+      end
+      puts "Confirm add of the preparation method: #{prep_name} of type:#{prep_type}"
+      if get_yes_no
+        add_preparation(coffee_db, prep_name, prep_type)
+        get_preparation_id(coffee_db, prep_name)
+        method_valid = true
+      end
+    end
+  end
+  prep_method
 end
 
 def list_preparations
+  preparations = all_preparations(coffee_db)
+  preparations.each_with_index do |method, ind|
+    puts "#{ind + 1} - #{method[:name]}"
+  end
+end
 
+def get_date(input = nil)
+  if !input
+    input_date = gets.chomp
+  else
+    input_date = input
+  end
+  input_day = input_date.to_i
+  input_month = input_date[3,2].to_i
+  input_year = input_date[6,4].to_i
+  Time.new(input_year, input_month, input_day)
+end
+
+def make_review
+  coffee_id = get_coffee
+  prep_id = get_preparation
+
+  puts "When did you taste the coffee? (DD-MM-YYYY)"
+  review_date = get_date.strftime('%s')
+
+  puts "When was the coffee roasted? (DD-MM-YYYY or enter if unknown)"
+  roast_date_input = gets.chomp
+  if roast_date_input == ""
+    roast_date = 0
+  else
+    roast_date = get_date(roast_date_input)
+  end
+
+  puts "What is your rating (1-10)?"
+  rating = gets.chomp.to_i
+
+  puts "Do you have any comments about this coffee (max 255 characters)?"
+  comment = gets.chomp[0,255]
+
+  add_review(coffee_db, user_id, coffee_id, prep_id, review_date, roast_date, rating, comment)
+  puts print_review_no_username(coffee_id, prep_id, review_date, rating, comment)
+
+end
+
+def print_review(user_id, coffee_id, prep_id, review_date, rating, comment)
+  puts "--------------------"
+  puts "#{user_name(user_id)}'s review of #{coffee_name(coffee_id)} on #{Time.at(review_date).strptime('%b-%d-%Y')}:"
+  print_review_no_header(prep_id, rating, comment)
+end
+
+def print_review_no_username(coffee_id, prep_id, review_date, rating, comment)
+  puts "--------------------"
+  puts "Review of #{coffee_name(coffee_id)} on #{Time.at(review_date).strptime('%b-%d-%Y')}:"
+  print_review_no_header(prep_id, rating, comment)
+end
+
+def print_review_no_header(prep_id, rating, comment)
+  puts "Method: #{preparation_name(prep_id)}"
+  puts "Rating: #{rating}"
+  puts "Notes: #{comment}"
 end
 
 # main interface
 def interface
   user_id = get_user
-  coffee_id = get_coffee
+  while true
+    puts "--------------------"
+    puts "What would you like to do?"
+    puts "1 - Make a review"
+    puts "2 - End"
+    menu_choice = gets.chomp.to_i
+    case menu_choice
+    when 1
+      make_review
+    when 2
+      break
+    end
+  end
+  puts "Thanks for using Coffee Reviews!"
 end
 
 create_tables(coffee_db)
