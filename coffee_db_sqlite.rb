@@ -85,7 +85,7 @@ def add_roaster(db, name, city)
   db.execute("INSERT INTO roasters (name, city) VALUES (?, ?)", [name, city])
 end
 
-def add_coffee(db, name, country, roast_date, roaster_id)
+def add_coffee(db, name, country, roaster_id)
   db.execute("INSERT INTO coffees (name, country, roaster_id) VALUES (?, ?, ?, ?)", [name, country, roaster_id])
 end
 
@@ -146,11 +146,11 @@ def get_roaster
     puts "What roaster roasted your coffee?"
     roaster_list = list_roasters
     puts "#{roaster_list.length + 1} - Other Roaster"
-    roaster_input.to_i = gets.chomp
-    if roaster_input < roaster_list.length && roaster_input > 0
-      roaster = roaster_list[roaster_input][:id]
+    roaster_input = gets.chomp.to_i
+    if roaster_input <= roaster_list.length && roaster_input > 0
+      roaster = roaster_list[roaster_input - 1][:id]
       roaster_valid = true
-    elsif roaster_input = roaster_list.length
+    elsif roaster_input == roaster_list.length + 1
       puts "What is the roaster's name?"
       roaster_name = gets.chomp
       puts "In what city is #{roaster_name} located?"
@@ -169,7 +169,7 @@ end
 def list_roasters
   roasters = all_roasters
   roasters.each_with_index { |roaster, ind|
-    puts "#{ind} - #{roaster[:name]} in #{roaster[:city]}"
+    puts "#{ind + 1} - #{roaster[:name]} in #{roaster[:city]}"
   }
   roasters
 end
@@ -178,26 +178,55 @@ def get_coffee
   coffee_valid = false
   while !coffee_valid
     roaster_id = get_roaster
-
+    coffee_list = list_coffees_from_roaster
+    puts "#{coffee_list.length + 1} - Other Coffee"
+    coffee_input = gets.chomp.to_i
+    if coffee_input <= coffee_list.length && coffee_input > 0
+      coffee = coffee_list[coffee_input - 1][:id]
+    elsif coffee_input == coffee_list.length + 1
+      puts "What is the name of the coffee?"
+      coffee_name = gets.chomp
+      puts "Is the coffee a blend?"
+      coffee_blend = get_yes_no
+      if !coffee_blend
+        puts "What is the coffee's country of origin?"
+        coffee_country = gets.chomp
+        puts "Confirm add of #{coffee_name} from #{coffee_country}. (y/n)"
+      else
+        coffee_country = "blend"
+        puts "Confirm add of #{coffee_name}."
+      end
+      add_coffee(coffee_db, coffee_name, coffee_country, roaster_id)
+      coffee = get_coffee_id(coffee_db, coffee_name, roaster_id)
+    end
   end
+  coffee
 end
 
 def list_coffees_from_roaster
   coffees = all_coffees_from_roaster
   coffees.each_with_index do |coffee, ind|
     if roaster[:country] == "blend" || !roaster[:country] || roaster[:country] == ""
-      puts "#{ind} - #{roaster[:name]} (blend)"
+      puts "#{ind + 1} - #{roaster[:name]} (blend)"
     else
-      puts "#{ind} - #{coffee[:name]} from #{coffee[:country]}"
+      puts "#{ind + 1} - #{coffee[:name]} from #{coffee[:country]}"
     end
   end
   coffees
 end
 
+def get_preparation
+  
+end
+
+def list_preparations
+
+end
+
 # main interface
 def interface
   user_id = get_user
-
+  coffee_id = get_coffee
 end
 
 create_tables(coffee_db)
